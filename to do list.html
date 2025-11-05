@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>To-Do List em JavaScript</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f2f2f2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      width: 350px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .input-area {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 10px 15px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background: #eee;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: 0.3s;
+    }
+
+    li.concluida {
+      text-decoration: line-through;
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .remover {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+
+    .remover:hover {
+      background: #b02a37;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1> Lista de Tarefas</h1>
+    <div class="input-area">
+      <input type="text" id="tarefaInput" placeholder="Digite uma tarefa..." />
+      <button onclick="adicionarTarefa()">Adicionar</button>
+    </div>
+    <ul id="listaTarefas"></ul>
+  </div>
+
+  <script>
+    const input = document.getElementById('tarefaInput');
+    const lista = document.getElementById('listaTarefas');
+
+    function adicionarTarefa() {
+      const texto = input.value.trim();
+      if (texto === '') {
+        alert('Digite uma tarefa antes de adicionar!');
+        return;
+      }
+
+      const li = document.createElement('li');
+      li.textContent = texto;
+
+      // Clicar no item marca/desmarca como concluído
+      li.addEventListener('click', () => {
+        li.classList.toggle('concluida');
+      });
+
+      // Botão de remover
+      const botaoRemover = document.createElement('button');
+      botaoRemover.textContent = 'X';
+      botaoRemover.classList.add('remover');
+      botaoRemover.addEventListener('click', (e) => {
+        e.stopPropagation(); // impede que o clique conte como "concluir"
+        li.remove();
+      });
+
+      li.appendChild(botaoRemover);
+      lista.appendChild(li);
+      input.value = '';
+      input.focus();
+    }
+
+    // Pressionar Enter também adiciona a tarefa
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') adicionarTarefa();
+    });
+  </script>
+</body>
+</html>
