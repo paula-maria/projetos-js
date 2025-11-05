@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <header>
+  <h1>CALCULADORA JS</h1> 
+</header>
+    </head>
+<body>
+
+<div id="calculadora">
+    <input type="text" id="visor" readonly placeholder="0">
+
+    <div class="botoes">
+        <button onclick="limparVisor()">C</button>
+        <br>
+         <button onclick="appendToVisor('-')">-</button>
+        <button onclick="appendToVisor('+')">+</button>
+        <button onclick="appendToVisor('/')">/</button>
+        <button onclick="appendToVisor('*')">x</button>
+       
+        <br>
+        
+        <button onclick="appendToVisor('7')">7</button>
+        <button onclick="appendToVisor('8')">8</button>
+        <button onclick="appendToVisor('9')">9</button>
+        
+        <br>
+
+        <button onclick="appendToVisor('4')">4</button>
+        <button onclick="appendToVisor('5')">5</button>
+        <button onclick="appendToVisor('6')">6</button>
+        <br>
+        
+
+        <button onclick="appendToVisor('1')">1</button>
+        <button onclick="appendToVisor('2')">2</button>
+        <button onclick="appendToVisor('3')">3</button>
+        <br>
+        <button onclick="apagarUltimo()">DEL</button> <button onclick="appendToVisor('0')">0</button>
+        
+
+        <br>
+        <button onclick="calcular()" class="igual">=</button>
+
+        <button onclick="appendToVisor('.')">.</button>
+        </div>
+</div>
+
+
+<script src="script.js"></script>
+
+</body>
+
+</html>
+
