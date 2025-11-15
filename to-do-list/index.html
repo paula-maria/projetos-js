@@ -17,7 +17,7 @@
 
     .container {
       background: #fff;
-      padding: 115px;
+      padding: 70px;
       border-radius: 25px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.2);
       width: 680px;
@@ -90,10 +90,9 @@
 
     li { animation: slideIn 0.3s ease; }
     @keyframes slideIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
     li {
       background: #f3f3f3;
@@ -165,10 +164,53 @@
       font-weight: 500;
       color: #333;
     }
+
+    /* ===== DASHBOARD DE PROGRESSO ===== */
+
+    .dashboard {
+      background: #eef3ff;
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .barra-externa {
+      width: 100%;
+      height: 20px;
+      background: #d7d7d7;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .barra-interna {
+      height: 100%;
+      background: linear-gradient(90deg, #4facfe, #00f2fe);
+      width: 0%;
+      transition: width 0.5s ease-in-out;
+    }
+
+    .porcentagem {
+      font-weight: bold;
+      margin-top: 5px;
+      color: #333;
+    }
   </style>
 </head>
 <body>
   <div class="container">
+
+    <!-- DASHBOARD DE PROGRESSO -->
+    <div class="dashboard">
+      <h2>Progresso Geral</h2>
+      <div class="barra-externa">
+        <div class="barra-interna" id="barraProgresso"></div>
+      </div>
+      <div class="porcentagem" id="textoProgresso">0%</div>
+    </div>
+
     <h1>Lista de Tarefas</h1>
 
     <div class="input-area">
@@ -187,113 +229,122 @@
     <div class="contador" id="contador">0 de 0 concluídas</div>
   </div>
 
-  <script>
-    const input = document.getElementById('tarefaInput');
-    const lista = document.getElementById('listaTarefas');
-    const contador = document.getElementById('contador');
-    let filtroAtual = 'todas';
+<script>
+  const input = document.getElementById('tarefaInput');
+  const lista = document.getElementById('listaTarefas');
+  const contador = document.getElementById('contador');
+  const barraProgresso = document.getElementById('barraProgresso');
+  const textoProgresso = document.getElementById('textoProgresso');
+  let filtroAtual = 'todas';
 
-    window.onload = carregarTarefas;
+  window.onload = carregarTarefas;
 
-    function adicionarTarefa() {
-      const texto = input.value.trim();
-      if (texto === '') {
-        alert('Digite uma tarefa!');
-        return;
-      }
+  function adicionarTarefa() {
+    const texto = input.value.trim();
+    if (texto === '') {
+      alert('Digite uma tarefa!');
+      return;
+    }
 
-      const tarefa = { texto, concluida: false };
-      criarItem(tarefa);
+    const tarefa = { texto, concluida: false };
+    criarItem(tarefa);
+    salvarTarefas();
+    atualizarContador();
+    input.value = '';
+    input.focus();
+  }
+
+  function criarItem(tarefa) {
+    const li = document.createElement('li');
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = tarefa.concluida;
+
+    const span = document.createElement('span');
+    span.textContent = tarefa.texto;
+
+    if (tarefa.concluida) li.classList.add('concluida');
+
+    checkbox.addEventListener('change', () => {
+      li.classList.toggle('concluida', checkbox.checked);
       salvarTarefas();
       atualizarContador();
-      input.value = '';
-      input.focus();
-    }
-
-    function criarItem(tarefa) {
-      const li = document.createElement('li');
-
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.checked = tarefa.concluida;
-
-      const span = document.createElement('span');
-      span.textContent = tarefa.texto;
-
-      if (tarefa.concluida) li.classList.add('concluida');
-
-      checkbox.addEventListener('change', () => {
-        li.classList.toggle('concluida', checkbox.checked);
-        salvarTarefas();
-        atualizarContador();
-        aplicarFiltro();
-      });
-
-      const botaoRemover = document.createElement('button');
-      botaoRemover.textContent = 'X';
-      botaoRemover.classList.add('remover');
-      botaoRemover.addEventListener('click', (e) => {
-        e.stopPropagation();
-        li.remove();
-        salvarTarefas();
-        atualizarContador();
-      });
-
-      li.appendChild(checkbox);
-      li.appendChild(span);
-      li.appendChild(botaoRemover);
-      lista.appendChild(li);
-    }
-
-    function salvarTarefas() {
-      const tarefas = [];
-      lista.querySelectorAll('li').forEach(li => {
-        tarefas.push({
-          texto: li.querySelector('span').textContent,
-          concluida: li.querySelector('input').checked
-        });
-      });
-      localStorage.setItem('tarefas', JSON.stringify(tarefas));
-    }
-
-    function carregarTarefas() {
-      const tarefasSalvas = JSON.parse(localStorage.getItem('tarefas')) || [];
-      tarefasSalvas.forEach(tarefa => criarItem(tarefa));
-      atualizarContador();
-    }
-
-    function filtrar(tipo) {
-      filtroAtual = tipo;
-      document.querySelectorAll('.filtros button').forEach(btn => btn.classList.remove('ativo'));
-      document.querySelector(`.filtros button[onclick="filtrar('${tipo}')"]`).classList.add('ativo');
       aplicarFiltro();
-    }
-
-    function aplicarFiltro() {
-      const itens = lista.querySelectorAll('li');
-      itens.forEach(li => {
-        switch (filtroAtual) {
-          case 'pendentes':
-            li.style.display = li.querySelector('input').checked ? 'none' : 'flex';
-            break;
-          case 'concluidas':
-            li.style.display = li.querySelector('input').checked ? 'flex' : 'none';
-            break;
-          default:
-            li.style.display = 'flex';
-        }
-      });
-    }
-
-    function atualizarContador() {
-      const total = lista.querySelectorAll('li').length;
-      const concluidas = lista.querySelectorAll('input:checked').length;
-      contador.textContent = `${concluidas} de ${total} concluídas`;
-    }
-
-    input.addEventListener('keypress', e => {
-      if (e.key === 'Enter') adicionarTarefa();
     });
-  </script>
+
+    const botaoRemover = document.createElement('button');
+    botaoRemover.textContent = 'X';
+    botaoRemover.classList.add('remover');
+    botaoRemover.addEventListener('click', (e) => {
+      e.stopPropagation();
+      li.remove();
+      salvarTarefas();
+      atualizarContador();
+    });
+
+    li.appendChild(checkbox);
+    li.appendChild(span);
+    li.appendChild(botaoRemover);
+    lista.appendChild(li);
+  }
+
+  function salvarTarefas() {
+    const tarefas = [];
+    lista.querySelectorAll('li').forEach(li => {
+      tarefas.push({
+        texto: li.querySelector('span').textContent,
+        concluida: li.querySelector('input').checked
+      });
+    });
+    localStorage.setItem('tarefas', JSON.stringify(tarefas));
+  }
+
+  function carregarTarefas() {
+    const tarefasSalvas = JSON.parse(localStorage.getItem('tarefas')) || [];
+    tarefasSalvas.forEach(tarefa => criarItem(tarefa));
+    atualizarContador();
+  }
+
+  function filtrar(tipo) {
+    filtroAtual = tipo;
+    document.querySelectorAll('.filtros button').forEach(btn => btn.classList.remove('ativo'));
+    document.querySelector(`.filtros button[onclick="filtrar('${tipo}')"]`).classList.add('ativo');
+    aplicarFiltro();
+  }
+
+  function aplicarFiltro() {
+    const itens = lista.querySelectorAll('li');
+    itens.forEach(li => {
+      switch (filtroAtual) {
+        case 'pendentes':
+          li.style.display = li.querySelector('input').checked ? 'none' : 'flex';
+          break;
+        case 'concluidas':
+          li.style.display = li.querySelector('input').checked ? 'flex' : 'none';
+          break;
+        default:
+          li.style.display = 'flex';
+      }
+    });
+  }
+
+  function atualizarContador() {
+    const total = lista.querySelectorAll('li').length;
+    const concluidas = lista.querySelectorAll('input:checked').length;
+
+    contador.textContent = `${concluidas} de ${total} concluídas`;
+
+    // DASHBOARD
+    const progresso = total === 0 ? 0 : Math.round((concluidas / total) * 100);
+    barraProgresso.style.width = progresso + "%";
+    textoProgresso.textContent = progresso + "%";
+  }
+
+  input.addEventListener('keypress', e => {
+    if (e.key === 'Enter') adicionarTarefa();
+  });
+</script>
+
 </body>
 </html>
