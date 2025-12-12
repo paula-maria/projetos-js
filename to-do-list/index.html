@@ -1,299 +1,708 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>To-Do List Completa</title>
-  <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #89f7fe, #66a6ff);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>To-Do Pro — Drag & Drop, Tags, Prioridade, GSAP</title>
 
-    .container {
-      background: #fff;
-      padding: 115px;
-      border-radius: 25px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-      width: 680px;
-      animation: fadeIn 0.5s ease-in-out;
-    }
+<!-- GSAP (animações) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<!-- SortableJS (drag & drop) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.16.0/Sortable.min.js"></script>
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+<style>
+  :root{
+    --bg:#f5f7fb;
+    --card:#fff;
+    --muted:#6b7280;
+    --accent:#4e8cff;
+    --high:#ff6b6b;
+    --medium:#ffb86b;
+    --low:#8bd48b;
+    --glass-bg: rgba(255,255,255,0.6);
+    --radius:12px;
+    --gap:14px;
+    --pad:22px;
+    --shadow: 0 6px 24px rgba(16,24,40,0.08);
+  }
 
-    h1 {
-      text-align: center;
-      margin-bottom: 15px;
-      color: #333;
-    }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: linear-gradient(180deg,#eef3ff 0%, var(--bg) 60%);
+    color:#0f172a;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+  }
 
-    .input-area {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
+  /* HEADER */
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 28px;
+    gap:16px;
+  }
+  .brand { display:flex; align-items:center; gap:12px }
+  .logo {
+    width:44px; height:44px; border-radius:10px;
+    background:linear-gradient(135deg,var(--accent),#66a6ff);
+    display:flex; align-items:center; justify-content:center;
+    color:white; font-weight:700; box-shadow: var(--shadow);
+  }
+  h1{font-size:18px; margin:0; letter-spacing: -0.2px}
+  .sub{font-size:13px; color:var(--muted)}
 
-    input[type="text"] {
-      flex: 1;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 16px;
-      transition: 0.3s;
-      box-shadow: inset 2px 2px 5px rgba(0,0,0,0.1);
-    }
+  .actions { display:flex; gap:10px; align-items:center; }
 
-    input[type="text"]:focus {
-      outline: none;
-      border-color: #66a6ff;
-      box-shadow: 0 0 5px rgba(102, 166, 255, 0.5);
-    }
+  .btn{
+    background:transparent; border:none; cursor:pointer; padding:10px 12px;
+    border-radius:10px; font-weight:600;
+  }
+  .btn.primary{
+    background:var(--accent); color:white; box-shadow: 0 6px 18px rgba(78,140,255,0.2);
+  }
 
-    button {
-      padding: 10px 15px;
-      background: #00e031;
-      color: rgb(255, 255, 255);
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: 0.3s;
-    }
+  /* LAYOUT */
+  main{
+    flex:1;
+    display:grid;
+    grid-template-columns: 360px 1fr;
+    gap:24px;
+    padding:28px;
+  }
 
-    button:hover {
-      background: #4e8bf5;
-      transform: scale(1.05);
-    }
+  /* SIDEBAR (left) */
+  .panel {
+    background:var(--card); border-radius:var(--radius); padding:var(--pad);
+    box-shadow: var(--shadow);
+    display:flex; flex-direction:column; gap:14px;
+    height:calc(100vh - 140px);
+  }
 
-    ul {
-      list-style: none;
-      padding: 0;
-      max-height: 250px;
-      overflow-y: auto;
-    }
+  .search {
+    display:flex; gap:10px; align-items:center;
+  }
+  .search input[type="text"]{
+    flex:1; padding:12px; border-radius:10px; border:1px solid #e6eefc;
+    background:transparent; outline:none; font-size:14px;
+  }
 
-    ul::-webkit-scrollbar {
-      width: 6px;
-    }
-    ul::-webkit-scrollbar-thumb {
-      background: #66a6ff;
-      border-radius: 10px;
-    }
+  label.small{font-size:13px; color:var(--muted)}
 
-    li { animation: slideIn 0.3s ease; }
-    @keyframes slideIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+  /* categories */
+  .categories{ display:flex; flex-direction:column; gap:8px; overflow:auto; padding-right:6px }
+  .category-row{
+    display:flex; gap:10px; align-items:center; justify-content:space-between;
+  }
+  .cat-left{display:flex; gap:10px; align-items:center}
+  .pill{
+    padding:8px 10px; border-radius:999px; color:white; font-weight:600; font-size:13px;
+    display:inline-flex; align-items:center; gap:8px;
+  }
 
+  .new-cat { display:flex; gap:8px; align-items:center }
+  .new-cat input[type="text"]{ padding:10px; border-radius:10px; border:1px solid #e6eefc; }
+  .new-cat input[type="color"]{ width:44px; height:38px; border:none; background:transparent }
 
-    li {
-      background: #f3f3f3;
-      margin-bottom: 10px;
-      padding: 10px;
-      border-radius: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      transition: background 0.3s;
-    }
+  /* center area (tasks) */
+  .workspace{
+    display:flex; flex-direction:column; gap:18px;
+  }
 
-    li:hover {
-      background: #e8f0ff;
-    }
+  .top-controls{
+    display:flex; align-items:center; gap:12px; justify-content:space-between;
+  }
 
-    li.concluida span {
-      text-decoration: line-through;
-      color: #155724;
-    }
+  .input-add{
+    display:flex; gap:10px; align-items:center;
+  }
+  .input-add input[type="text"]{
+    width:540px; padding:14px; border-radius:12px; border:1px solid #e6eefc; outline:none;
+    background:transparent; font-size:15px;
+  }
+  .select, .select-small{
+    padding:10px 12px; border-radius:10px; border:1px solid #e6eefc; background:transparent;
+    font-weight:600;
+  }
+  .select-small{ padding:8px 10px; }
 
-    .remover {
-      background: #dc3545;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 5px 10px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: 0.3s;
-    }
+  /* task list area */
+  .board{
+    background:transparent; display:flex; flex-direction:column; gap:12px; overflow:auto; padding-bottom:40px;
+  }
 
-    .remover:hover {
-      background: #b02a37;
-    }
+  ul#listaTarefas { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:12px; }
 
-    .filtros {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 15px;
-    }
+  li.task {
+    display:flex; align-items:center; gap:12px; padding:14px; border-radius:12px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.9), var(--card));
+    box-shadow: 0 6px 22px rgba(16,24,40,0.04);
+    border-left:6px solid transparent;
+    cursor:grab;
+  }
+  li.task:active{ cursor:grabbing; }
 
-    .filtros button {
-      flex: 1;
-      margin: 0 5px;
-      background: #eee;
-      color: #333;
-      border: none;
-      border-radius: 8px;
-      padding: 8px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: 0.3s;
-    }
+  .task-left{ display:flex; gap:12px; align-items:center; flex:1; min-width:0 }
+  .task-left input[type="checkbox"]{ transform:scale(1.25); cursor:pointer; }
+  .task-title{ font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .task-meta{ display:flex; gap:8px; align-items:center; margin-left:auto; }
 
-    .filtros button:hover {
-      background: #d6e4ff;
-    }
+  /* priority indicator - left border */
+  li.task.low{ border-left-color: var(--low); }
+  li.task.medium{ border-left-color: var(--medium); }
+  li.task.high{ border-left-color: var(--high); }
 
-    .filtros button.ativo {
-      background: #66a6ff;
-      color: white;
-      font-weight: bold;
-    }
+  .tag{
+    padding:6px 10px; border-radius:999px; font-size:13px; font-weight:700; color:white; display:inline-flex; align-items:center; gap:8px;
+  }
 
-    .contador {
-      text-align: center;
-      margin-top: 15px;
-      font-weight: 500;
-      color: #333;
-    }
-  </style>
+  .controls-right{ display:flex; gap:8px; align-items:center }
+
+  .icon-btn{ background:transparent; border:none; padding:8px; border-radius:8px; cursor:pointer }
+  .remove-btn{ background:#ffefef; border:1px solid #ffd4d4; padding:8px 10px; border-radius:8px; color:#b21a1a; font-weight:700 }
+
+  /* footer */
+  footer{
+    padding:10px 24px; color:var(--muted); font-size:13px;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+
+  /* responsive */
+  @media (max-width:960px){
+    main{ grid-template-columns: 1fr; padding:16px; }
+    .input-add input[type="text"]{ width:100% }
+    .panel{ height:auto }
+  }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h1>Lista de Tarefas</h1>
 
-    <div class="input-area">
-      <input type="text" id="tarefaInput" placeholder="Digite uma tarefa..." />
-      <button onclick="adicionarTarefa()">Adicionar</button>
+<header>
+  <div class="brand">
+    <div class="logo">TD</div>
+    <div>
+      <h1>To-Do Pro</h1>
+      <div class="sub">Drag & Drop • Tags • Prioridade • Animações</div>
     </div>
-
-    <ul id="listaTarefas"></ul>
-
-    <div class="filtros">
-      <button class="ativo" onclick="filtrar('todas')">Todas</button>
-      <button onclick="filtrar('pendentes')">Pendentes</button>
-      <button onclick="filtrar('concluidas')">Concluídas</button>
-    </div>
-
-    <div class="contador" id="contador">0 de 0 concluídas</div>
   </div>
+  <div class="actions">
+    <button class="btn" id="exportBtn" title="Exportar JSON">Exportar</button>
+    <button class="btn" id="importBtn" title="Importar JSON">Importar</button>
+    <button class="btn primary" id="clearAllBtn" title="Limpar tudo">Limpar tudo</button>
+  </div>
+</header>
 
-  <script>
-    const input = document.getElementById('tarefaInput');
-    const lista = document.getElementById('listaTarefas');
-    const contador = document.getElementById('contador');
-    let filtroAtual = 'todas';
+<main>
+  <!-- SIDEBAR -->
+  <aside class="panel" aria-label="Controles">
+    <div>
+      <label class="small">Pesquisar</label>
+      <div class="search">
+        <input id="searchInput" type="text" placeholder="Buscar tarefa, tag, prioridade..." />
+      </div>
+    </div>
 
-    window.onload = carregarTarefas;
+    <div>
+      <label class="small">Categorias / Tags</label>
+      <div class="categories" id="categoriesList"></div>
 
-    function adicionarTarefa() {
-      const texto = input.value.trim();
-      if (texto === '') {
-        alert('Digite uma tarefa!');
-        return;
-      }
+      <div style="height:8px"></div>
+      <div class="new-cat">
+        <input id="newCatName" type="text" placeholder="Nova categoria" />
+        <input id="newCatColor" type="color" value="#66a6ff"/>
+        <button class="btn" id="addCatBtn">Adicionar</button>
+      </div>
+    </div>
 
-      const tarefa = { texto, concluida: false };
-      criarItem(tarefa);
-      salvarTarefas();
-      atualizarContador();
-      input.value = '';
-      input.focus();
+    <div style="margin-top:8px">
+      <label class="small">Filtros rápidos</label>
+      <div style="display:flex; gap:8px; margin-top:8px">
+        <button class="btn" onclick="applyQuickFilter('all')">Todas</button>
+        <button class="btn" onclick="applyQuickFilter('pending')">Pendentes</button>
+        <button class="btn" onclick="applyQuickFilter('done')">Concluídas</button>
+      </div>
+    </div>
+
+    <div style="margin-top:auto; font-size:13px; color:var(--muted)">
+      Dica: arraste uma tarefa para reordenar. As alterações são salvas automaticamente.
+    </div>
+  </aside>
+
+  <!-- WORKSPACE -->
+  <section class="workspace">
+    <div class="top-controls">
+      <div class="input-add">
+        <input id="tarefaInput" type="text" placeholder="O que você quer fazer?" aria-label="Nova tarefa" />
+        <select id="selectCategory" class="select-small" title="Categoria"></select>
+        <select id="selectPriority" class="select-small" title="Prioridade">
+          <option value="low">Baixa</option>
+          <option value="medium" selected>Média</option>
+          <option value="high">Alta</option>
+        </select>
+        <button class="btn primary" id="addBtn">Adicionar</button>
+      </div>
+
+      <div style="display:flex; gap:10px; align-items:center">
+        <label class="small" id="counterDisplay">0 / 0</label>
+      </div>
+    </div>
+
+    <div class="board">
+      <ul id="listaTarefas" aria-live="polite"></ul>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div>Feito com ❤️ • To-Do Pro</div>
+  <div id="storageInfo">Salvo localmente</div>
+</footer>
+
+<script>
+/* --------------------------
+   Estruturas e utilidades
+   -------------------------- */
+const lista = document.getElementById('listaTarefas');
+const input = document.getElementById('tarefaInput');
+const addBtn = document.getElementById('addBtn');
+const selectCategory = document.getElementById('selectCategory');
+const selectPriority = document.getElementById('selectPriority');
+const categoriesList = document.getElementById('categoriesList');
+const newCatName = document.getElementById('newCatName');
+const newCatColor = document.getElementById('newCatColor');
+const addCatBtn = document.getElementById('addCatBtn');
+const searchInput = document.getElementById('searchInput');
+const counterDisplay = document.getElementById('counterDisplay');
+const exportBtn = document.getElementById('exportBtn');
+const importBtn = document.getElementById('importBtn');
+const clearAllBtn = document.getElementById('clearAllBtn');
+
+let tarefas = []; // array de objetos {id,texto,concluida,category,color,priority}
+let categories = [
+  { id: 'geral', name: 'Geral', color: '#66a6ff' },
+  { id: 'trabalho', name: 'Trabalho', color: '#7fba7a' },
+  { id: 'estudo', name: 'Estudo', color: '#ffb86b' }
+];
+
+/* --------------------------
+   Persistência (localStorage)
+   -------------------------- */
+const STORAGE_KEY = 'tdpro_v1';
+function salvar() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ tarefas, categories }));
+  updateStorageInfo();
+}
+function carregar() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed.categories) categories = parsed.categories;
+    if (parsed.tarefas) tarefas = parsed.tarefas;
+  } catch (e) { console.warn('Erro ao carregar storage', e) }
+}
+
+/* --------------------------
+   Helpers
+   -------------------------- */
+function uid(prefix='id') {
+  return prefix + '_' + Math.random().toString(36).slice(2,9);
+}
+function formatCount(){
+  const total = tarefas.length;
+  const done = tarefas.filter(t => t.concluida).length;
+  counterDisplay.textContent = `${done} / ${total}`;
+}
+function updateStorageInfo(){
+  const size = new Blob([localStorage.getItem(STORAGE_KEY) || '']).size;
+  document.getElementById('storageInfo').textContent = `Salvo localmente • ${Math.round(size/1024)} KB`;
+}
+
+/* --------------------------
+   Categorias UI
+   -------------------------- */
+function renderCategories(){
+  // select options
+  selectCategory.innerHTML = '';
+  categories.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat.id;
+    opt.textContent = cat.name;
+    opt.dataset.color = cat.color;
+    selectCategory.appendChild(opt);
+  });
+
+  // list (sidebar)
+  categoriesList.innerHTML = '';
+  categories.forEach(cat => {
+    const row = document.createElement('div');
+    row.className = 'category-row';
+    row.innerHTML = `
+      <div class="cat-left">
+        <div class="pill" style="background:${cat.color}">${cat.name}</div>
+      </div>
+      <div>
+        <button class="btn" onclick="filterByCategory('${cat.id}')">Filtrar</button>
+        <button class="btn" onclick="removeCategory('${cat.id}')">✕</button>
+      </div>
+    `;
+    categoriesList.appendChild(row);
+  });
+}
+
+function addCategory(name, color){
+  const id = uid('cat');
+  categories.push({ id, name, color });
+  renderCategories();
+  salvar();
+}
+
+function removeCategory(id){
+  // prevenir remoção das categorias padrão? aqui permitimos, e tarefas com essa categoria passam para 'geral'
+  categories = categories.filter(c => c.id !== id);
+  tarefas = tarefas.map(t => t.category===id ? {...t, category:'geral'} : t);
+  renderAll();
+  salvar();
+}
+
+addCatBtn.addEventListener('click', () => {
+  const name = newCatName.value.trim();
+  const color = newCatColor.value;
+  if (!name) return alert('Digite um nome para a categoria');
+  addCategory(name, color);
+  newCatName.value = '';
+});
+
+/* --------------------------
+   CRUD tarefas + UI render
+   -------------------------- */
+function criarTarefaObj(text, category, priority){
+  return {
+    id: uid('task'),
+    texto: text,
+    concluida: false,
+    category,
+    priority,
+    created_at: Date.now()
+  };
+}
+
+function addTarefaFromInput(){
+  const texto = input.value.trim();
+  if (!texto) return;
+  const categoria = selectCategory.value || 'geral';
+  const priority = selectPriority.value || 'medium';
+
+  // evitar duplicata exata
+  if (tarefas.some(t => t.texto === texto)) {
+    flashToast('Tarefa já existe');
+    return;
+  }
+
+  const t = criarTarefaObj(texto, categoria, priority);
+  tarefas.unshift(t); // inserir no topo
+  renderAll();
+  salvar();
+  input.value = '';
+  // animação de entrada com GSAP
+  const el = document.querySelector(`#task_${t.id}`);
+  if (el) gsap.from(el, {duration:0.45, y:-14, opacity:0, scale:0.98, ease:"power2.out"});
+}
+
+addBtn.addEventListener('click', addTarefaFromInput);
+input.addEventListener('keypress', (e)=> { if (e.key==='Enter') addTarefaFromInput(); });
+
+function removeTarefa(id){
+  const el = document.getElementById('task_'+id);
+  if (el){
+    gsap.to(el, {duration:0.28, x:30, opacity:0, height:0, margin:0, padding:0, ease:'power1.in', onComplete:()=>{
+      tarefas = tarefas.filter(t => t.id !== id);
+      renderAll();
+      salvar();
+    }});
+  } else {
+    tarefas = tarefas.filter(t => t.id !== id);
+    renderAll();
+    salvar();
+  }
+}
+
+function toggleDone(id){
+  tarefas = tarefas.map(t => t.id===id ? {...t, concluida: !t.concluida} : t);
+  salvar();
+  renderAll();
+}
+
+/* --------------------------
+   Render lista
+   -------------------------- */
+function renderAll(filterText=''){
+  // order preserved by tarefas array
+  lista.innerHTML = '';
+  // apply search filter
+  const q = (filterText || searchInput.value || '').trim().toLowerCase();
+
+  tarefas.forEach(t => {
+    if (q){
+      const inText = t.texto.toLowerCase().includes(q);
+      const catName = (categories.find(c=>c.id===t.category)||{}).name || '';
+      const inCat = catName.toLowerCase().includes(q);
+      const inPriority = t.priority.includes(q);
+      if (!(inText || inCat || inPriority)) return;
     }
 
-    function criarItem(tarefa) {
-      const li = document.createElement('li');
+    const li = document.createElement('li');
+    li.className = `task ${t.priority}`;
+    li.id = 'task_'+t.id;
+    li.draggable = true;
+    const cat = categories.find(c => c.id===t.category) || categories[0];
 
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.checked = tarefa.concluida;
+    li.innerHTML = `
+      <div class="task-left">
+        <input type="checkbox" ${t.concluida ? 'checked' : ''} aria-label="Marcar tarefa"/>
+        <div style="min-width:0">
+          <div class="task-title">${escapeHtml(t.texto)}</div>
+          <div style="display:flex;gap:8px;margin-top:6px;align-items:center;font-size:13px;color:var(--muted)">
+            <div class="tag" style="background:${cat.color}">${cat.name}</div>
+            <div style="padding:6px 8px;border-radius:8px;background:rgba(0,0,0,0.03);font-weight:700">
+              ${t.priority === 'high' ? 'Alta' : t.priority === 'medium' ? 'Média' : 'Baixa'}
+            </div>
+          </div>
+        </div>
+      </div>
 
-      const span = document.createElement('span');
-      span.textContent = tarefa.texto;
+      <div class="controls-right">
+        <button class="icon-btn" title="Editar" onclick="editarTarefa('${t.id}')">✎</button>
+        <button class="remove-btn" title="Remover" onclick="removeTarefa('${t.id}')">Remover</button>
+      </div>
+    `;
 
-      if (tarefa.concluida) li.classList.add('concluida');
+    // checkbox handler
+    li.querySelector('input[type="checkbox"]').addEventListener('change', () => toggleDone(t.id));
+    // double click edit on title
+    li.querySelector('.task-title').addEventListener('dblclick', () => editarTarefa(t.id));
 
-      checkbox.addEventListener('change', () => {
-        li.classList.toggle('concluida', checkbox.checked);
-        salvarTarefas();
-        atualizarContador();
-        aplicarFiltro();
-      });
+    lista.appendChild(li);
+  });
 
-      const botaoRemover = document.createElement('button');
-      botaoRemover.textContent = 'X';
-      botaoRemover.classList.add('remover');
-      botaoRemover.addEventListener('click', (e) => {
-        e.stopPropagation();
-        li.remove();
-        salvarTarefas();
-        atualizarContador();
-      });
+  formatCount();
+  initSortable(); // re-init sortable so it knows items
+}
 
-      li.appendChild(checkbox);
-      li.appendChild(span);
-      li.appendChild(botaoRemover);
-      lista.appendChild(li);
+/* --------------------------
+   Editar tarefa
+   -------------------------- */
+function editarTarefa(id){
+  const t = tarefas.find(x => x.id===id);
+  if (!t) return;
+  const novo = prompt('Editar tarefa:', t.texto);
+  if (novo !== null){
+    const texto = novo.trim();
+    if (!texto) return flashToast('Texto inválido');
+    tarefas = tarefas.map(item => item.id===id ? {...item, texto} : item);
+    salvar();
+    renderAll();
+  }
+}
+
+/* --------------------------
+   Drag & Drop (SortableJS)
+   -------------------------- */
+let sortableInstance = null;
+function initSortable(){
+  if (sortableInstance) {
+    sortableInstance.destroy();
+    sortableInstance = null;
+  }
+  sortableInstance = Sortable.create(lista, {
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    handle: '.task-left',
+    onEnd: function (evt) {
+      // update tarefas order based on DOM
+      const ids = Array.from(lista.children).map(li => li.id.replace('task_',''));
+      tarefas = ids.map(id => tarefas.find(t => t.id===id));
+      salvar();
+      // small reorder animation with GSAP
+      gsap.fromTo('#listaTarefas > li', {y:8, opacity:0.85}, {duration:0.35, y:0, opacity:1, stagger:0.02, ease:'power2.out'});
     }
+  });
+}
 
-    function salvarTarefas() {
-      const tarefas = [];
-      lista.querySelectorAll('li').forEach(li => {
-        tarefas.push({
-          texto: li.querySelector('span').textContent,
-          concluida: li.querySelector('input').checked
-        });
-      });
-      localStorage.setItem('tarefas', JSON.stringify(tarefas));
-    }
+/* --------------------------
+   Filtros e busca
+   -------------------------- */
+searchInput.addEventListener('input', () => renderAll());
 
-    function carregarTarefas() {
-      const tarefasSalvas = JSON.parse(localStorage.getItem('tarefas')) || [];
-      tarefasSalvas.forEach(tarefa => criarItem(tarefa));
-      atualizarContador();
-    }
+function applyQuickFilter(mode){
+  if (mode === 'all') renderAll('');
+  if (mode === 'pending') renderAll(''); // show all, but you can expand to pre-filter
+  if (mode === 'done') renderAll('');
+  // for simplicity quick filters use UI or search; more advanced can filter array directly
+}
 
-    function filtrar(tipo) {
-      filtroAtual = tipo;
-      document.querySelectorAll('.filtros button').forEach(btn => btn.classList.remove('ativo'));
-      document.querySelector(`.filtros button[onclick="filtrar('${tipo}')"]`).classList.add('ativo');
-      aplicarFiltro();
-    }
+function filterByCategory(catId){
+  // highlight category and render only tasks matching
+  searchInput.value = '';
+  renderAll(''); // reset then filter manually
+  // show only tasks with category
+  lista.innerHTML = '';
+  tarefas.filter(t => t.category===catId).forEach(t => {
+    // re-use render code by temporary array -> simplest approach: set search and renderAll with name?
+  });
+  // Simpler: apply filter on tarefas
+  const filtered = tarefas.filter(t => t.category===catId);
+  lista.innerHTML = '';
+  filtered.forEach(t => {
+    // create nodes similar to renderAll
+    const li = document.createElement('li');
+    li.className = `task ${t.priority}`;
+    li.id = 'task_'+t.id;
+    li.draggable = true;
+    const cat = categories.find(c => c.id===t.category) || categories[0];
+    li.innerHTML = `
+      <div class="task-left">
+        <input type="checkbox" ${t.concluida ? 'checked' : ''} aria-label="Marcar tarefa"/>
+        <div style="min-width:0">
+          <div class="task-title">${escapeHtml(t.texto)}</div>
+          <div style="display:flex;gap:8px;margin-top:6px;align-items:center;font-size:13px;color:var(--muted)">
+            <div class="tag" style="background:${cat.color}">${cat.name}</div>
+            <div style="padding:6px 8px;border-radius:8px;background:rgba(0,0,0,0.03);font-weight:700">
+              ${t.priority === 'high' ? 'Alta' : t.priority === 'medium' ? 'Média' : 'Baixa'}
+            </div>
+          </div>
+        </div>
+      </div>
 
-    function aplicarFiltro() {
-      const itens = lista.querySelectorAll('li');
-      itens.forEach(li => {
-        switch (filtroAtual) {
-          case 'pendentes':
-            li.style.display = li.querySelector('input').checked ? 'none' : 'flex';
-            break;
-          case 'concluidas':
-            li.style.display = li.querySelector('input').checked ? 'flex' : 'none';
-            break;
-          default:
-            li.style.display = 'flex';
-        }
-      });
-    }
+      <div class="controls-right">
+        <button class="icon-btn" title="Editar" onclick="editarTarefa('${t.id}')">✎</button>
+        <button class="remove-btn" title="Remover" onclick="removeTarefa('${t.id}')">Remover</button>
+      </div>
+    `;
+    li.querySelector('input[type="checkbox"]').addEventListener('change', () => toggleDone(t.id));
+    li.querySelector('.task-title').addEventListener('dblclick', () => editarTarefa(t.id));
+    lista.appendChild(li);
+  });
+}
 
-    function atualizarContador() {
-      const total = lista.querySelectorAll('li').length;
-      const concluidas = lista.querySelectorAll('input:checked').length;
-      contador.textContent = `${concluidas} de ${total} concluídas`;
-    }
+/* --------------------------
+   Import / Export / Clear
+   -------------------------- */
+exportBtn.addEventListener('click', () => {
+  const data = JSON.stringify({ tarefas, categories }, null, 2);
+  const blob = new Blob([data], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'tdpro-backup.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
 
-    input.addEventListener('keypress', e => {
-      if (e.key === 'Enter') adicionarTarefa();
-    });
-  </script>
+importBtn.addEventListener('click', () => {
+  const inputFile = document.createElement('input');
+  inputFile.type = 'file';
+  inputFile.accept = 'application/json';
+  inputFile.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        if (parsed.categories) categories = parsed.categories;
+        if (parsed.tarefas) tarefas = parsed.tarefas;
+        renderAll();
+        renderCategories();
+        salvar();
+        flashToast('Importado com sucesso');
+      } catch (err) { alert('Arquivo inválido') }
+    };
+    reader.readAsText(file);
+  };
+  inputFile.click();
+});
+
+clearAllBtn.addEventListener('click', () => {
+  if (!confirm('Deseja realmente limpar todas as tarefas?')) return;
+  tarefas = [];
+  salvar();
+  renderAll();
+});
+
+/* --------------------------
+   Small utilities
+   -------------------------- */
+function escapeHtml(str){
+  return str.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+}
+
+/* --------------------------
+   Tiny toast (não intrusivo)
+   -------------------------- */
+function flashToast(msg){
+  const toast = document.createElement('div');
+  toast.textContent = msg;
+  toast.style.position = 'fixed';
+  toast.style.left = '50%';
+  toast.style.top = '18px';
+  toast.style.transform = 'translateX(-50%)';
+  toast.style.background = 'rgba(16,24,40,0.9)';
+  toast.style.color = 'white';
+  toast.style.padding = '10px 16px';
+  toast.style.borderRadius = '10px';
+  toast.style.zIndex = 9999;
+  document.body.appendChild(toast);
+  gsap.fromTo(toast, {y:-10, opacity:0}, {y:0, opacity:1, duration:0.25});
+  setTimeout(()=> gsap.to(toast, {opacity:0, y:-10, duration:0.25, onComplete:()=> toast.remove()}), 1600);
+}
+
+/* ---------------
+   Inicialização
+   ---------------------- */
+function init(){
+  carregar();
+  renderCategories();
+  renderAll();
+  updateSelectColorPreview();
+  formatCount();
+  updateStorageInfo();
+  // small entrance animation
+  gsap.from('header .logo', {duration:0.6, scale:0.92, opacity:0, ease:'power3.out'});
+  gsap.from('.panel, .workspace', {duration:0.6, y:8, opacity:0, stagger:0.06});
+}
+
+function updateSelectColorPreview(){
+  
+  selectCategory.addEventListener('change', () => {
+    const opt = selectCategory.selectedOptions[0];
+    const color = opt?.dataset?.color || '#66a6ff';
+    selectCategory.style.borderLeft = `6px solid ${color}`;
+  });
+  // initialize border
+  const first = selectCategory.selectedOptions[0];
+  if (first) selectCategory.style.borderLeft = `6px solid ${first.dataset.color || '#66a6ff'}`;
+}
+
+/* ---------------
+   Start
+  ------- */
+init();
+
+/* --------------------------
+   Expose some functions to global for inline handlers
+   -------------------------- */
+window.removeTarefa = removeTarefa;
+window.editarTarefa = editarTarefa;
+window.filterByCategory = filterByCategory;
+window.applyQuickFilter = applyQuickFilter;
+
+</script>
 </body>
 </html>
